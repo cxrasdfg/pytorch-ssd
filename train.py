@@ -76,7 +76,7 @@ if args.cuda:
 if args.resume:
     log.l.info('Resuming training, loading {}...'.format(args.resume))
     ssd_net.load_weights(args.resume)
-    start_iter = int(agrs.resume.split('/')[-1].split('.')[0].split('_')[-1])
+    start_iter = int(args.resume.split('/')[-1].split('.')[0].split('_')[-1])
 else:
     vgg_weights = torch.load(args.save_folder + args.basenet)
     log.l.info('Loading base network...')
@@ -244,9 +244,12 @@ def adjust_learning_rate(optimizer, gamma, epoch, step_index, iteration, epoch_s
     # https://github.com/pytorch/examples/blob/master/imagenet/main.py
     """
     if epoch < 6:
-        lr = 1e-6 + (args.lr-1e-6) * iteration / (epoch_size * 5) 
+        lr = 1e-6 + (args.lr-1e-6) * float(iteration) / (epoch_size * 5) 
     else:
         lr = args.lr * (gamma ** (step_index))
+    
+    print("Warning: Use the default learning strategy...")
+    lr = args.lr * (gamma ** (step_index))
     for param_group in optimizer.param_groups:
         param_group['lr'] = lr
     return lr
