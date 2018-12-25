@@ -205,20 +205,20 @@ def train():
         loss.backward()
         optimizer.step()
         t1 = time.time()
-        loc_loss += loss_l.data[0]
-        conf_loss += loss_c.data[0]
+        loc_loss += loss_l.item()
+        conf_loss += loss_c.item()
         if iteration % 10 == 0:
             log.l.info('''
                 Timer: {:.5f} sec.\t LR: {}.\t Iter: {}.\t Loss_l: {:.5f}.\t Loss_c: {:.5f}.
-                '''.format((t1-t0),lr,iteration,loss_l.data[0],loss_c.data[0]))
+                '''.format((t1-t0),lr,iteration,loss_l.item(),loss_c.item()))
             if args.visdom and args.send_images_to_visdom:
                 random_batch_index = np.random.randint(images.size(0))
                 viz.image(images.data[random_batch_index].cpu().numpy())
         if args.visdom:
             viz.line(
                 X=torch.ones((1, 3)).cpu() * iteration,
-                Y=torch.Tensor([loss_l.data[0], loss_c.data[0],
-                    loss_l.data[0] + loss_c.data[0]]).unsqueeze(0).cpu(),
+                Y=torch.Tensor([loss_l.item(), loss_c.item(),
+                    loss_l.item() + loss_c.item()]).unsqueeze(0).cpu(),
                 win=lot,
                 update='append'
             )
