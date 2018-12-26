@@ -14,7 +14,7 @@ import torch.utils.data as data
 from ssd import build_ssd
 
 parser = argparse.ArgumentParser(description='Single Shot MultiBox Detection')
-parser.add_argument('--trained_model', default='weights/ssd_300_VOC0712.pth',
+parser.add_argument('--trained_model', default='weights/ssd_args.dim_VOC0712.pth',
                     type=str, help='Trained state_dict file path to open')
 parser.add_argument('--save_folder', default='eval/', type=str,
                     help='Dir to save results')
@@ -23,6 +23,7 @@ parser.add_argument('--visual_threshold', default=0.6, type=float,
 parser.add_argument('--cuda', default=False, type=bool,
                     help='Use cuda to train model')
 parser.add_argument('--voc_root', default=VOCroot, help='Location of VOC root directory')
+parser.add_argument('--dim', default=300, help='size of input')
 
 args = parser.parse_args()
 
@@ -74,7 +75,7 @@ def test_net(save_folder, net, cuda, testset, transform, thresh):
 if __name__ == '__main__':
     # load net
     num_classes = len(VOC_CLASSES) + 1 # +1 background
-    net = build_ssd('test', 300, num_classes) # initialize SSD
+    net = build_ssd('test', args.dim, num_classes) # initialize SSD
     net.load_state_dict(torch.load(args.trained_model))
     net.eval()
     log.l.info('Finished loading model!')

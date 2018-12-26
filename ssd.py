@@ -198,6 +198,7 @@ mbox = {
 
 
 def build_ssd(phase, size=512, num_classes=21):
+    size=int(size)
     if phase != "test" and phase != "train":
         print("Error: Phase not recognized")
         return

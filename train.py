@@ -1,6 +1,7 @@
 # -*- coding: utf-8 -*-
 import os
 import torch
+import numpy as np
 import torch.nn as nn
 import torch.optim as optim
 import torch.backends.cudnn as cudnn
@@ -40,7 +41,12 @@ parser.add_argument('--log_iters', default=True, type=bool, help='Print the loss
 parser.add_argument('--visdom', default=False, type=str2bool, help='Use visdom to for loss visualization')
 parser.add_argument('--save_folder', default='weights/', help='Location to save checkpoint models')
 parser.add_argument('--data_root', default=VOCroot, help='Location of VOC root directory')
+parser.add_argument('--rand_seed', default=123456,type=int, help='rand seed')
 args = parser.parse_args()
+
+np.random.seed(args.rand_seed)
+torch.manual_seed(args.rand_seed)
+torch.cuda.manual_seed(args.rand_seed)
 
 if args.cuda and torch.cuda.is_available():
     torch.set_default_tensor_type('torch.cuda.FloatTensor')

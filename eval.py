@@ -34,7 +34,7 @@ def str2bool(v):
     return v.lower() in ("yes", "true", "t", "1")
 
 parser = argparse.ArgumentParser(description='Single Shot MultiBox Detection')
-parser.add_argument('--trained_model', default='weights/ssd512_mAP_77.43_v2.pth',
+parser.add_argument('--trained_model', default='weights/ssdint(args.dim)_mAP_77.43_v2.pth',
                     type=str, help='Trained state_dict file path to open')
 parser.add_argument('--save_folder', default='eval/', type=str,
                     help='File path to save results')
@@ -45,6 +45,7 @@ parser.add_argument('--top_k', default=5, type=int,
 parser.add_argument('--cuda', default=True, type=str2bool,
                     help='Use cuda to train model')
 parser.add_argument('--voc_root', default=VOCroot, help='Location of VOC root directory')
+parser.add_argument('--dim', default=300, help='size of input')
 
 args = parser.parse_args()
 
@@ -350,7 +351,7 @@ cachedir: Directory for caching the annotations
 
 
 def test_net(save_folder, net, cuda, dataset, transform, top_k,
-             im_size=512, thresh=0.05):
+             im_size=int(args.dim), thresh=0.05):
     """Test a Fast R-CNN network on an image database."""
     num_images = len(dataset)
     # all detections are collected into:
@@ -361,7 +362,7 @@ def test_net(save_folder, net, cuda, dataset, transform, top_k,
 
     # timers
     _t = {'im_detect': Timer(), 'misc': Timer()}
-    output_dir = get_output_dir('ssd512_120000', set_type)
+    output_dir = get_output_dir('ssdint(args.dim)_120000', set_type)
     det_file = os.path.join(output_dir, 'detections.pkl')
 
     for i in range(num_images):
@@ -379,7 +380,7 @@ def test_net(save_folder, net, cuda, dataset, transform, top_k,
             dets = detections[0, j, :]
             mask = dets[:, 0].gt(0.).expand(5, dets.size(0)).t()
             dets = torch.masked_select(dets, mask).view(-1, 5)
-            if dets.dim() == 0:
+            if dets.size(0) == 0:
                 continue
             boxes = dets[:, 1:]
             boxes[:, 0] *= w
@@ -409,16 +410,16 @@ def evaluate_detections(box_list, output_dir, dataset):
 if __name__ == '__main__':
     # load net
     num_classes = len(VOC_CLASSES) + 1 # +1 background
-    net = build_ssd('test', 512, num_classes) # initialize SSD
+    net = build_ssd('test', int(args.dim), num_classes) # initialize SSD
     net.load_state_dict(torch.load(args.trained_model))
     net.eval()
     log.l.info('Finished loading model!')
     # load data
-    dataset = VOCDetection(args.voc_root, [('2007', set_type)], BaseTransform(512, dataset_mean), AnnotationTransform())
+    dataset = VOCDetection(args.voc_root, [('2007', set_type)], BaseTransform(int(args.dim), dataset_mean), AnnotationTransform())
     if args.cuda:
         net = net.cuda()
         cudnn.benchmark = True
     # evaluation
     test_net(args.save_folder, net, args.cuda, dataset,
-             BaseTransform(net.size, dataset_mean), args.top_k, 512,
+             BaseTransform(net.size, dataset_mean), args.top_k, int(args.dim),
              thresh=args.confidence_threshold)
