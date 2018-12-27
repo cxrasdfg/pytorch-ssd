@@ -46,6 +46,7 @@ parser.add_argument('--cuda', default=True, type=str2bool,
                     help='Use cuda to train model')
 parser.add_argument('--voc_root', default=VOCroot, help='Location of VOC root directory')
 parser.add_argument('--dim', default=300, help='size of input')
+parser.add_argument('--diff', default=False, type=bool,help='keep difficult target in dataset')
 
 args = parser.parse_args()
 
@@ -415,7 +416,7 @@ if __name__ == '__main__':
     net.eval()
     log.l.info('Finished loading model!')
     # load data
-    dataset = VOCDetection(args.voc_root, [('2007', set_type)], BaseTransform(int(args.dim), dataset_mean), AnnotationTransform())
+    dataset = VOCDetection(args.voc_root, [('2007', set_type)], BaseTransform(int(args.dim), dataset_mean), AnnotationTransform(keep_difficult=args.diff))
     if args.cuda:
         net = net.cuda()
         cudnn.benchmark = True
