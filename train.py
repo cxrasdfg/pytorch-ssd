@@ -9,7 +9,8 @@ import torch.nn.init as init
 import argparse
 from torch.autograd import Variable
 import torch.utils.data as data
-from data import AnnotationTransform, VOCDetection, detection_collate, VOCroot, VOC_CLASSES
+from data import AnnotationTransform, VOCDetection, detection_collate, \
+    VOCroot, VOC_CLASSES,COCODetection
 from data import KittiLoader, AnnotationTransform_kitti,Class_to_ind
 
 from utils.augmentations import SSDAugmentation
@@ -56,16 +57,23 @@ else:
 if not os.path.exists(args.save_folder):
     os.mkdir(args.save_folder)
 
-train_sets = [('2007', 'trainval'), ('2012', 'trainval')]
 # train_sets = 'train'
 means = (104, 117, 123)  # only support voc now
 if args.dataset=='VOC':
     num_classes = len(VOC_CLASSES) + 1
+    train_sets = [('2007', 'trainval'), ('2012', 'trainval')]
+    stepvalues = (60000, 80000, 100000)
+
 elif args.dataset=='kitti':
     num_classes = 1+1
+elif args.dataset=='COCO':
+    num_classes= 81
+    train_sets = [['2017', 'train']]
+    stepvalues = (160000, 200000, 240000)
+
+
 accum_batch_size = 32
 iter_size = accum_batch_size / args.batch_size
-stepvalues = (60000, 80000, 100000)
 start_iter = 0
 
 if args.visdom:
@@ -94,7 +102,7 @@ if args.cuda:
 
 
 def xavier(param):
-    init.xavier_uniform(param)
+    init.xavier_uniform_(param)
 
 
 def weights_init(m):
@@ -127,6 +135,11 @@ def DatasetSync(dataset='VOC',split='training'):
         dataset = KittiLoader(DataRoot, split=split,img_size=(1000,300),
                   transforms=SSDAugmentation((1000,300),means),
                   target_transform=AnnotationTransform_kitti())
+    elif dataset=='COCO':
+        DataRoot='/root/data/COCO/'
+        dataset=COCODetection(DataRoot,train_sets,SSDAugmentation(
+        args.dim, means),None)
+
     return dataset
 
 def train():
