@@ -14,7 +14,8 @@ from data import VOCroot
 from data import VOC_CLASSES as labelmap
 import torch.utils.data as data
 
-from data import AnnotationTransform, VOCDetection, BaseTransform, VOC_CLASSES
+from data import AnnotationTransform, VOCDetection, BaseTransform,COCODetection,\
+     VOC_CLASSES
 from ssd import build_ssd
 from log import log
 import sys
@@ -34,7 +35,7 @@ def str2bool(v):
     return v.lower() in ("yes", "true", "t", "1")
 
 parser = argparse.ArgumentParser(description='Single Shot MultiBox Detection')
-parser.add_argument('--trained_model', default='weights/ssdint(args.dim)_mAP_77.43_v2.pth',
+parser.add_argument('--trained_model', default='weights/ssd300_0712_240000.pth',
                     type=str, help='Trained state_dict file path to open')
 parser.add_argument('--save_folder', default='eval/', type=str,
                     help='File path to save results')
@@ -47,6 +48,7 @@ parser.add_argument('--cuda', default=True, type=str2bool,
 parser.add_argument('--voc_root', default=VOCroot, help='Location of VOC root directory')
 parser.add_argument('--dim', default=300, help='size of input')
 parser.add_argument('--diff', default=False, type=bool,help='keep difficult target in dataset')
+parser.add_argument('-d', '--dataset', default='COCO',help='VOC or COCO dataset')
 
 args = parser.parse_args()
 
@@ -358,8 +360,12 @@ def test_net(save_folder, net, cuda, dataset, transform, top_k,
     # all detections are collected into:
     #    all_boxes[cls][image] = N x 5 array of detections in
     #    (x1, y1, x2, y2, score)
-    all_boxes = [[[] for _ in range(num_images)]
-                 for _ in range(len(labelmap)+1)]
+    if args.dataset=="VOC":
+        all_boxes = [[[] for _ in range(num_images)]
+                     for _ in range(len(labelmap)+1)]
+    elif args.dataset=="COCO":
+        all_boxes = [[[] for _ in range(num_images)]
+                     for _ in range(81)]
 
     # timers
     _t = {'im_detect': Timer(), 'misc': Timer()}
@@ -404,19 +410,39 @@ def test_net(save_folder, net, cuda, dataset, transform, top_k,
 
 
 def evaluate_detections(box_list, output_dir, dataset):
-    write_voc_results_file(box_list, dataset)
-    do_python_eval(output_dir)
-
+    if args.dataset=='VOC':
+        write_voc_results_file(box_list, dataset)
+        do_python_eval(output_dir)
+    elif args.dataset=='COCO':
+        dataset.evaluate_detections(box_list,output_dir)
 
 if __name__ == '__main__':
-    # load net
-    num_classes = len(VOC_CLASSES) + 1 # +1 background
+    ############################
+    eee=True
+    if eee:
+        DataRoot='/root/data/COCO/'
+        dataset = COCODetection(DataRoot, [('2017', 'val')], BaseTransform(int(args.dim), dataset_mean), None)
+        output_dir = get_output_dir('ssdint(args.dim)_120000', set_type)
+        det_file = os.path.join(output_dir, 'detections.pkl')
+        with open(det_file, 'rb') as f:
+            all_boxes=pickle.load(f)
+            dataset.evaluate_detections(all_boxes,output_dir)
+        exit()
+    ############################
+    
+    # load data
+    if args.dataset=='VOC':
+        num_classes = len(VOC_CLASSES) + 1 # +1 background
+        dataset = VOCDetection(args.voc_root, [('2007', set_type)], BaseTransform(int(args.dim), dataset_mean), AnnotationTransform(keep_difficult=args.diff))
+    elif args.dataset=='COCO':
+        num_classes = 81
+        DataRoot='/root/data/COCO/'
+        dataset = COCODetection(DataRoot, [('2017', 'val')], BaseTransform(int(args.dim), dataset_mean), None)
+    #load net
     net = build_ssd('test', int(args.dim), num_classes) # initialize SSD
     net.load_state_dict(torch.load(args.trained_model))
     net.eval()
     log.l.info('Finished loading model!')
-    # load data
-    dataset = VOCDetection(args.voc_root, [('2007', set_type)], BaseTransform(int(args.dim), dataset_mean), AnnotationTransform(keep_difficult=args.diff))
     if args.cuda:
         net = net.cuda()
         cudnn.benchmark = True

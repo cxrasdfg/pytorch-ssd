@@ -223,6 +223,39 @@ class COCODetection(data.Dataset):
     def __len__(self):
         return len(self.ids)
 
+    def pull_item(self, index):
+        img_id = self.ids[index]
+        target = self.annotations[index]
+
+        img = cv2.imread(img_id)
+        height, width, _ = img.shape
+
+        if self.target_transform is not None:
+            target = self.target_transform(target)
+
+
+        if self.preproc is not None:
+            if len(target) == 0:
+                target = np.zeros((1,5))
+            target = np.array(target)
+            # normalize...
+            target[:,:4]/=[width,height,width,height]
+            # minus one
+            target[:,4]-=1
+            # print(target)
+            # exit()
+            img, boxes,labels = self.preproc(img, target[:,:4],target[:,4])
+            img=img[:,:,[2,1,0]]
+            target = np.hstack((boxes, np.expand_dims(labels, axis=1)))
+            # import pdb; pdb.set_trace()
+            # print('imin,imax:',img.min(),img.max(),boxes)
+            # exit()
+                    # target = self.target_transform(target, width, height)
+        #print(target.shape)
+
+        # return img, target
+        return torch.from_numpy(img).permute(2, 0, 1), target,height, width
+        
     def pull_image(self, index):
         '''Returns the original image object at index in PIL form
 
@@ -318,9 +351,10 @@ class COCODetection(data.Dataset):
     def _coco_results_one_category(self, boxes, cat_id):
         results = []
         for im_ind, index in enumerate(self.image_indexes):
-            dets = boxes[im_ind].astype(np.float)
+            dets = boxes[im_ind]
             if dets == []:
                 continue
+            dets = boxes[im_ind].astype(np.float)                
             scores = dets[:, -1]
             xs = dets[:, 0]
             ys = dets[:, 1]
