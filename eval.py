@@ -418,11 +418,16 @@ def evaluate_detections(box_list, output_dir, dataset):
 
 if __name__ == '__main__':
     ############################
-    eee=True
+    eee=False
     if eee:
+
         DataRoot='/root/data/COCO/'
         dataset = COCODetection(DataRoot, [('2017', 'val')], BaseTransform(int(args.dim), dataset_mean), None)
         output_dir = get_output_dir('ssdint(args.dim)_120000', set_type)
+        ########## has json detection result file#############
+        dataset.evaluate_detections(None,output_dir,det_res='/root/detections_minival_ssd300_results.json')
+        exit()
+        ########################
         det_file = os.path.join(output_dir, 'detections.pkl')
         with open(det_file, 'rb') as f:
             all_boxes=pickle.load(f)

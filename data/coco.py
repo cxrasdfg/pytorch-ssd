@@ -394,12 +394,15 @@ class COCODetection(data.Dataset):
         with open(res_file, 'w') as fid:
             json.dump(results, fid)
 
-    def evaluate_detections(self, all_boxes, output_dir):
+    def evaluate_detections(self, all_boxes, output_dir,det_res=None):
         res_file = os.path.join(output_dir, ('detections_' +
                                          self.coco_name +
                                          '_results'))
         res_file += '.json'
-        self._write_coco_results_file(all_boxes, res_file)
+        if det_res is None:
+            self._write_coco_results_file(all_boxes, res_file)
+        else:
+            res_file=det_res
         # Only do evaluation on non-test sets
         if self.coco_name.find('test') == -1:
             self._do_detection_eval(res_file, output_dir)

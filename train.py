@@ -70,6 +70,7 @@ elif args.dataset=='COCO':
     num_classes= 81
     train_sets = [['2017', 'train']]
     stepvalues = (160000, 200000, 240000)
+    stepvalues = (280000, 360000, 400000)
 
 
 accum_batch_size = 32
